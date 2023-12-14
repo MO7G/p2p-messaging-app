@@ -51,15 +51,30 @@ import threading
 import select
 import logging
 import db
+from utils.loader import *
 import os
 from dotenv import main
 import os
 #main.load_dotenv()
 #host = os.getenv('REGISTRY_HOSTNAME_IP')
 
+
+
+
+# onlinePeers list for online account
+onlinePeers = {}
+
+# accounts list for accounts
+accounts = {}
+
+# tcpThreads list for online client's thread
+tcpThreads = {}
+
 # This class is used to process the peer messages sent to registry
 # for each peer connected to registry, a new client thread is created
 class ClientThread(threading.Thread):
+
+
 
     # initializations for client thread
     def __init__(self, peerIp, peerPort, tcpPeerClientSocket):
@@ -253,33 +268,58 @@ class ClientThread(threading.Thread):
     def resetTimeout(self):
         self.udpServer.resetTimer()
 
-                            
-# implementation of the udp server thread for clients
+
+
+
+# Implementation of the UDP server thread for clients
 class UDPServer(threading.Thread):
+    """
+    This class represents a UDP server thread for handling communication with clients.
 
+    Attributes:
+    - username: The username associated with the client.
+    - timer: Timer object for tracking the timeout period.
+    - tcpClientSocket: The associated TCP client socket.
+    """
 
-    # udp server thread initializations
+    # UDP server thread initializations
     def __init__(self, username, clientSocket):
+        """
+        Constructor for the UDPServer class.
+
+        :param username: The username associated with the client.
+        :param clientSocket: The associated TCP client socket.
+        """
         threading.Thread.__init__(self)
         self.username = username
-        # timer thread for the udp server is initialized
+        # Timer thread for the UDP server is initialized with a timeout of 3 seconds
         self.timer = threading.Timer(3, self.waitHelloMessage)
         self.tcpClientSocket = clientSocket
-    
 
-    # if hello message is not received before timeout
-    # then peer is disconnected
+    # If a hello message is not received before the timeout,
+    # then the peer is considered disconnected
     def waitHelloMessage(self):
+        """
+        Handles the case when a hello message is not received before the timeout.
+        Disconnects the peer, logs them out, and removes them from the online peers list.
+        """
         if self.username is not None:
+            # Log out the user in the database
             db.user_logout(self.username)
+
+            # Remove the user from the online peers list
             if self.username in tcpThreads:
                 del tcpThreads[self.username]
+
+        # Close the associated TCP client socket
         self.tcpClientSocket.close()
         print("Removed " + self.username + " from online peers")
 
-
-    # resets the timer for udp server
+    # Resets the timer for the UDP server
     def resetTimer(self):
+        """
+        Resets the timer for the UDP server to the initial timeout period (3 seconds).
+        """
         self.timer.cancel()
         self.timer = threading.Timer(3, self.waitHelloMessage)
         self.timer.start()
@@ -317,8 +357,8 @@ def initialize_sockets(host, tcp_port, udp_port,max_of_users):
 def main():
     # tcp and udp server port initializations
     print("Registy started...")
-    portTcp = 15600
-    portUdp = 15500
+    tcp_port = 15600
+    udp_port = 15500
 
     # db testing if is working or not
     db_cursor = db.DB()
@@ -333,25 +373,18 @@ def main():
     # main.load_dotenv()
     # host = os.getenv('REGISTRY_HOSTNAME_IP')
     print("Registry IP address: " + host)
-    print("Registry port number: " + str(portTcp))
+    print("Registry port number: " + str(tcp_port))
 
-    # onlinePeers list for online account
-    onlinePeers = {}
-
-    # accounts list for accounts
-    accounts = {}
-
-    # tcpThreads list for online client's thread
-    tcpThreads = {}
 
     # creating the sockets
-    tcpSocket, udpSocket = initialize_sockets(portTcp, portUdp,)
+    tcpSocket, udpSocket = initialize_sockets(host,udp_port,tcp_port,5)
 
     # input sockets that are listened
     inputs = [tcpSocket, udpSocket]
 
     # log file initialization
     logging.basicConfig(filename="logs/registry.log", level=logging.INFO, filemode='w')
+
 
     # as long as at least a socket exists to listen registry runs
     while inputs:

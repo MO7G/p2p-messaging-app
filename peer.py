@@ -171,7 +171,6 @@ class PeerServer(threading.Thread):
                 logging.error("OSError: {0}".format(oErr))
             except ValueError as vErr:
                 logging.error("ValueError: {0}".format(vErr))
-            
 
 # Client side of peer
 class PeerClient(threading.Thread):
@@ -388,7 +387,7 @@ class peerMain:
     def __init__(self):
         # ip address of the registry
         #self.registryName = input("Enter IP address of registry: ")
-        self.registryName = '172.20.10.2'
+        self.registryName = '127.0.0.1'
         # port number of the registry
         self.registryPort = 15600
         # tcp socket connection to registry
@@ -675,6 +674,6 @@ class peerMain:
         self.timer = threading.Timer(1, self.sendHelloMessage)
         self.timer.start()
 
-print("yes")
+
 # peer is started
 main = peerMain()
