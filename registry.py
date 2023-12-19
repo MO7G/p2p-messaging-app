@@ -51,7 +51,6 @@ import logging
 import db_connection
 from utils.loader import *
 import os
-from dotenv import main
 import os
 #main.load_dotenv()
 #host = os.getenv('REGISTRY_HOSTNAME_IP')

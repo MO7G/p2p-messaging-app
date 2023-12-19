@@ -5,7 +5,7 @@ import time
 import select
 import logging
 from utils.message_formatter import *
-from tabulate import tabulate
+
 # Server side of peer
 class PeerServer(threading.Thread):
 
