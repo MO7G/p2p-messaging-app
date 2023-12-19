@@ -389,7 +389,7 @@ class peerMain:
     def __init__(self):
         # ip address of the registry
         #self.registryName = input("Enter IP address of registry: ")
-        self.registryName = '127.0.0.1'
+        self.registryName = '127.0.1.1'
         # port number of the registry
         self.registryPort = 15600
         # tcp socket connection to registry
@@ -752,7 +752,7 @@ class peerMain:
             headers = ["Username", "IP", "Port"]
 
             # Print the table using tabulate
-            print(tabulate(table_data, headers, tablefmt="grid"))
+            #print(tabulate(table_data, headers, tablefmt="grid"))
 
     # function for sending hello message
     # a timer thread is used to send hello messages to udp socket of registry

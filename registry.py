@@ -49,12 +49,11 @@ import threading
 import select
 import logging
 import db_connection
-from utils.loader import *
-import os
-import os
-#main.load_dotenv()
-#host = os.getenv('REGISTRY_HOSTNAME_IP')
-
+from config.app_config import AppConfig
+from config.port_manager import PortManager
+db= db_connection.DB();
+conf = AppConfig();
+port_manager = PortManager()
 
 
 
@@ -67,7 +66,7 @@ accounts = {}
 # tcpThreads list for online client's thread
 tcpThreads = {}
 
-db= db_connection.DB();
+
 # This class is used to process the peer messages sent to registry
 # for each peer connected to registry, a new client thread is created
 class ClientThread(threading.Thread):
@@ -363,17 +362,10 @@ def initialize_sockets(host, tcp_port, udp_port,max_of_users):
 def main():
     # tcp and udp server port initializations
     print("Registy started...")
-    tcp_port = 15600
-    udp_port = 15500
-
-
-    hostname = gethostname()
-    try:
-        host = gethostbyname(hostname)
-    except gaierror:
-        import netifaces as ni
-        host = ni.ifaddresses('en0')[ni.AF_INET][0]['addr']
-
+    tcp_port = conf.port_tcp
+    udp_port = conf.port_udp
+    host = conf.hostname
+    max_users = conf.max_users
     # main.load_dotenv()
     # host = os.getenv('REGISTRY_HOSTNAME_IP')
     print("Registry IP address: " + host)
@@ -381,7 +373,7 @@ def main():
 
 
     # creating the sockets
-    tcpSocket, udpSocket = initialize_sockets(host,tcp_port,udp_port,5)
+    tcpSocket, udpSocket = initialize_sockets(host,tcp_port,udp_port,max_users)
 
     # input sockets that are listened
     inputs = [tcpSocket, udpSocket]
@@ -399,6 +391,9 @@ def main():
             # if the message received comes to the tcp socket
             # the connection is accepted and a thread is created for it, and that thread is started
             if s is tcpSocket:
+                #tcpClientSocket: The socket for communication with the connected client.
+                #addr[0]: The IP address of the connected client.
+                #addr[1]: The dynamically assigned port number by the operating system for the connected client.
                 tcpClientSocket, addr = tcpSocket.accept()
                 newThread = ClientThread(addr[0], addr[1], tcpClientSocket)
                 newThread.start()
@@ -416,11 +411,8 @@ def main():
                         tcpThreads[message[1]].resetTimeout()
                         print("Hello is received from " + message[1])
                         logging.info("Received from " + clientAddress[0] + ":" + str(clientAddress[1]) + " -> " + " ".join(message))
-
     # Closing the connection after finishing
     tcpSocket.close()
-
-
 if __name__ == "__main__":
     main()
 
