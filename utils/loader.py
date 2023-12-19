@@ -1,38 +1,19 @@
-import threading
-import time
-import db
+import matplotlib.pyplot as plt
 
-class Loader:
-    def __init__(self, desc="Loading...", timeout=0.1):
-        self.desc = desc
-        self.timeout = timeout
-        self._thread = threading.Thread(target=self._animate, daemon=True)
-        self.done = False
+def calculate_links(n):
+    return n * (n - 1) // 2
 
-    def start(self):
-        self._thread.start()
-        return self
+# Number of nodes (1 to 100)
+nodes = list(range(1, 101))
 
-    def _animate(self):
-        while not self.done:
-            print(f"\r{self.desc}", end="", flush=True)
-            time.sleep(self.timeout)
-            print(" ", end="", flush=True)
+# Calculate the number of links for each number of nodes
+links = [calculate_links(n) for n in nodes]
 
-    def stop(self):
-        self.done = True
-        self._thread.join()  # Wait for the thread to finish
-        print("\r", end="", flush=True)
-
-    def __enter__(self):
-        self.start()
-
-    def __exit__(self, exc_type, exc_value, tb):
-        self.stop()
-
-
-
-def loaderHelper(message , Func):
-    with Loader(message):
-        Func();
-
+# Plotting
+plt.plot(nodes, links, label='Mesh Topology')
+plt.xlabel('Number of Nodes')
+plt.ylabel('Number of Links')
+plt.title('Mesh Topology: Growth of Links with Nodes')
+plt.legend()
+plt.grid(True)
+plt.show()

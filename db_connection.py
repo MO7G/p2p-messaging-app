@@ -114,6 +114,10 @@ class DB:
         }
         self.db.rooms.update_one(filter_criteria, update_data)
 
+    def get_all_online_users(self):
+        online_users = list(self.db.online_peers.find({}, {"_id": 0, "username": 1, "ip": 1, "port": 1}))
+        return online_users
+
     def is_connection_working(self):
         try:
             # Attempt to ping the database server
@@ -122,3 +126,5 @@ class DB:
 
         except ServerSelectionTimeoutError:
             print("  Connection to the database is not working.")
+
+

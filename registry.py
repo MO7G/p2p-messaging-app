@@ -43,14 +43,12 @@ are responsible for managing timeouts and disconnecting inactive peers.
 Author: [Your Name]
 Date: [Current Date]
 """
-
-
-
+import json
 from socket import *
 import threading
 import select
 import logging
-import db
+import db_connection
 from utils.loader import *
 import os
 from dotenv import main
@@ -70,6 +68,7 @@ accounts = {}
 # tcpThreads list for online client's thread
 tcpThreads = {}
 
+db= db_connection.DB();
 # This class is used to process the peer messages sent to registry
 # for each peer connected to registry, a new client thread is created
 class ClientThread(threading.Thread):
@@ -101,7 +100,7 @@ class ClientThread(threading.Thread):
         # locks make sure that no two threads will access the same resource at the same time
         # this will prevent race condition or and ensure data integrity
         self.lock = threading.Lock()
-        print("Connection from: " + self.ip + ":" + str(port))
+        print("Connection from: " + self.ip + ":" + str(self.port))
         print("IP Connected: " + self.ip)
         
         while True:
@@ -114,8 +113,9 @@ class ClientThread(threading.Thread):
                     print("No message received, client may have disconnected.")
                     break
 
-                logging.info("Received from " + self.ip + ":" + str(self.port) + " -> " + " ".join(message))            
-                #   JOIN    #
+                logging.info("Received from " + self.ip + ":" + str(self.port) + " -> " + " ".join(message))
+
+                #   Creating An Account  #
                 if message[0] == "JOIN":
                     # join-exist is sent to peer,
                     # if an account with this username already exists
@@ -136,6 +136,7 @@ class ClientThread(threading.Thread):
                     # login-account-not-exist is sent to peer,
                     # if an account with the username does not exist
                     if not db.is_account_exist(message[1]):
+
                         response = "login-account-not-exist"
                         logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response) 
                         self.tcpClientSocket.send(response.encode())
@@ -218,6 +219,11 @@ class ClientThread(threading.Thread):
                         logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response) 
                         self.tcpClientSocket.send(response.encode())
 
+                elif message[0] == "ONLINE_USERS":
+                    all_online_users= db.get_all_online_users()
+                    online_users_json = json.dumps(all_online_users)
+                    # Send the JSON-encoded data to the peer
+                    self.tcpClientSocket.send(online_users_json.encode())
                 elif message[0] == "CREATE":
                     # CREATE-exist is sent to peer,
                     # if an room with this username already exists
@@ -231,6 +237,7 @@ class ClientThread(threading.Thread):
                         response = "creation-success"
                         logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response) 
                         self.tcpClientSocket.send(response.encode())
+
                 elif message[0] == "JOINROOM":
                     # checks if an account with the username exists
                     if db.is_room_exist(message[1]):
@@ -293,7 +300,7 @@ class UDPServer(threading.Thread):
         threading.Thread.__init__(self)
         self.username = username
         # Timer thread for the UDP server is initialized with a timeout of 3 seconds
-        self.timer = threading.Timer(3, self.waitHelloMessage)
+        self.timer = threading.Timer(30, self.waitHelloMessage)
         self.tcpClientSocket = clientSocket
 
     # If a hello message is not received before the timeout,
@@ -360,8 +367,6 @@ def main():
     tcp_port = 15600
     udp_port = 15500
 
-    # db testing if is working or not
-    db_cursor = db.DB()
 
     hostname = gethostname()
     try:
@@ -377,7 +382,7 @@ def main():
 
 
     # creating the sockets
-    tcpSocket, udpSocket = initialize_sockets(host,udp_port,tcp_port,5)
+    tcpSocket, udpSocket = initialize_sockets(host,tcp_port,udp_port,5)
 
     # input sockets that are listened
     inputs = [tcpSocket, udpSocket]
