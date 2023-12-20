@@ -5,6 +5,8 @@ import time
 import select
 import logging
 from utils.message_formatter import *
+from config.app_config import AppConfig
+conf = AppConfig();
 
 # Server side of peer
 class PeerServer(threading.Thread):
@@ -389,16 +391,16 @@ class peerMain:
     def __init__(self):
         # ip address of the registry
         #self.registryName = input("Enter IP address of registry: ")
-        self.registryName = '127.0.1.1'
+        self.registryName = conf._hostname
         # port number of the registry
-        self.registryPort = 15600
+        self.registryPort = conf.port_tcp
         # tcp socket connection to registry
         self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
         self.tcpClientSocket.connect((self.registryName,self.registryPort))
         # initializes udp socket which is used to send hello messages
         self.udpClientSocket = socket(AF_INET, SOCK_DGRAM)
         # udp port of the registry
-        self.registryUDPPort = 15500
+        self.registryUDPPort = conf.port_udp
         # login info of the peer
         self.loginCredentials = (None, None)
         # online status of the peer

@@ -47,11 +47,14 @@ import json
 from socket import *
 import threading
 import select
-import logging
-import db_connection
 from config.app_config import AppConfig
 from config.port_manager import PortManager
-db= db_connection.DB();
+from config.logger_config import LoggerConfig
+from config.database_config import DB
+import logging
+terminalLogFlag = False
+logger = LoggerConfig("registry", level=logging.INFO, log_path='./logs/src', enable_console=terminalLogFlag).get_logger()
+db= DB();
 conf = AppConfig();
 port_manager = PortManager()
 
@@ -364,7 +367,7 @@ def main():
     print("Registy started...")
     tcp_port = conf.port_tcp
     udp_port = conf.port_udp
-    host = conf.hostname
+    host = conf._hostname
     max_users = conf.max_users
     # main.load_dotenv()
     # host = os.getenv('REGISTRY_HOSTNAME_IP')

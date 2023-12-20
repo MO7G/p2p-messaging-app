@@ -7,8 +7,7 @@ from config.app_config import AppConfig
 from metaClass.singleton import SingletonMeta
 from config.logger_config import LoggerConfig
 terminalLogFlag = True
-logger_config = LoggerConfig()
-logger  = LoggerConfig.configure_logger("port_manager", level=logging.INFO, log_path='../logs/config',enable_console=terminalLogFlag)
+logger  = LoggerConfig("port_manager", level=logging.INFO, log_path='./logs/config',enable_console=terminalLogFlag).get_logger()
 conf = AppConfig()
 
 class PortManager(metaclass=SingletonMeta):
@@ -24,6 +23,7 @@ class PortManager(metaclass=SingletonMeta):
         self.kill_ports()
 
     def kill_ports(self):
+        logger.info(f'freeing ports from {self.initialPortValue} to {self.initialPortValue + self.total_ports + self.total_rooms}')
         for port in range(self.initialPortValue, self.total_ports + self.total_rooms + self.initialPortValue):
             self.terminate_process_using_port(port)
 
@@ -68,7 +68,7 @@ class PortManager(metaclass=SingletonMeta):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
                 # Attempt to bind to the specified port
-                s.bind((conf.hostname, port))
+                s.bind((conf._hostname, port))
             except OSError as e:
                 # If the port is in use, return True
                 if e.errno == socket.errno.EADDRINUSE:
@@ -94,5 +94,6 @@ class PortManager(metaclass=SingletonMeta):
             except Exception as e:
                 logger.error(f"Error terminating process: {e}")
         else:
-            logger.info(f"No process found using port {port}.")
+             #logger.info(f"No process found using port {port}.")
+            pass
 
