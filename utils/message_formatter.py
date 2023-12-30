@@ -1,6 +1,5 @@
 import re
-import webbrowser
-
+from colorama import Fore, Style  # Assuming you are using the colorama library for colors
 
 def display_message(username, message, is_current_user):
     """
@@ -14,12 +13,10 @@ def display_message(username, message, is_current_user):
     formatted_message = display_hyperlinks(formatted_message)
 
     # Apply color based on user
-    colored_username = color_green(username) if is_current_user else color_red(username)
+    colored_username = color_red(username) if is_current_user else color_green(username)
 
     # Display the formatted message
-    # print(f"{colored_username}: {formatted_message}")
-    return formatted_message
-
+    return f"{colored_username}:{color_green(formatted_message)}"
 
 def parse_bold(message):
     """
@@ -32,21 +29,6 @@ def parse_italics(message):
     Parses _italics_ text.
     """
     return re.sub(r'\_(.*?)\_', lambda m: f'\033[3m{m.group(1)}\033[0m', message)
-
-import re
-
-def parse_italics(message):
-    """
-    Parses /italic/ text.
-    """
-    return re.sub(r'/(.*?)/', lambda m: f'\033[3m{m.group(1)}\033[0m', message)
-
-def color_blue(text):
-    """
-    Colors the given text in blue.
-    """
-    return f'\033[94m{text}\033[0m'  # Blue text
-
 
 def display_hyperlinks(message):
     """
@@ -61,9 +43,27 @@ def display_hyperlinks(message):
 
     return message_with_blue_links
 
+def color_blue(text):
+    """
+    Colors the given text in blue.
+    """
+    return f'{Fore.BLUE}{text}{Style.RESET_ALL}'
 
 def color_green(text):
-    return f'\033[92m{text}\033[0m'  # Green text
+    """
+    Colors the given text in green.
+    """
+    return f'{Fore.GREEN}{text}{Style.RESET_ALL}'
 
 def color_red(text):
-    return f'\033[91m{text}\033[0m'  # Red text
+    """
+    Colors the given text in red.
+    """
+    return f'{Fore.RED}{text}{Style.RESET_ALL}'
+
+# Example usage
+username = "User123"
+message = "This is a **bold** and _italic_ message with a link: https://example.com"
+is_current_user = True
+formatted_message = display_message(username, message, is_current_user)
+print(formatted_message)

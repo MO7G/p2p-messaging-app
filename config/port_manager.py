@@ -4,13 +4,12 @@ import logging
 import socket
 import psutil
 from config.app_config import AppConfig
-from metaClass.singleton import SingletonMeta
 from config.logger_config import LoggerConfig
-terminalLogFlag = True
+terminalLogFlag = False
 logger  = LoggerConfig("port_manager", level=logging.INFO, log_path='./logs/config',enable_console=terminalLogFlag).get_logger()
 conf = AppConfig()
 
-class PortManager(metaclass=SingletonMeta):
+class PortManager():
     def __init__(self):
         self.total_ports = conf.max_users
         self.total_rooms = conf.max_users
@@ -20,13 +19,18 @@ class PortManager(metaclass=SingletonMeta):
         self.available_room_ports = set()
         self.unavailable_room_ports = set()
         self.initialize_ports()
-        self.kill_ports()
+        #self.kill_ports()
+        self.kill_main_ports()
 
     def kill_ports(self):
         logger.info(f'freeing ports from {self.initialPortValue} to {self.initialPortValue + self.total_ports + self.total_rooms}')
         for port in range(self.initialPortValue, self.total_ports + self.total_rooms + self.initialPortValue):
             self.terminate_process_using_port(port)
 
+    def kill_main_ports(self):
+        logger.info(f'freeing ports {conf.port_tcp} , {conf.port_udp}');
+        self.terminate_process_using_port(conf.port_tcp)
+        self.terminate_process_using_port(conf.port_udp)
     def initialize_ports(self):
         self.available_login_ports = set(range(self.initialPortValue, self.total_ports + self.initialPortValue))
         self.available_room_ports = set(range(self.initialPortValue + self.total_ports, self.total_rooms + self.initialPortValue + self.total_ports))
@@ -68,7 +72,7 @@ class PortManager(metaclass=SingletonMeta):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
                 # Attempt to bind to the specified port
-                s.bind((conf._hostname, port))
+                s.bind((conf.hostname, port))
             except OSError as e:
                 # If the port is in use, return True
                 if e.errno == socket.errno.EADDRINUSE:

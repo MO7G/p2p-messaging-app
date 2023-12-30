@@ -1,0 +1,1 @@
+Thre is issue when you join a room that doesn't exist error happens in the peer.py

@@ -1,31 +1,23 @@
+import hashlib
 import sys
 
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError, ServerSelectionTimeoutError
 from config.logger_config import LoggerConfig
 import logging
+import bcrypt
+from bson.binary import Binary
+
 terminalLogFlag = True
 logger = LoggerConfig("database_config", level=logging.INFO, log_path='../logs/config', enable_console=terminalLogFlag).get_logger()
 
 
 # Includes database operations
 class DB:
-    DEFAULT_USERNAME = "thirdpartydevtool"
-    DEFAULT_PASSWORD = "mohd"
-    DEFAULT_CLUSTER = "cluster0.6dtz6l1.mongodb.net"
-    DEFAULT_DATABASE = "p2p-chat"
-
     def __init__(self, username=None, password=None, connection_string=None):
-        self.username = username or self.DEFAULT_USERNAME
-        self.password = password or self.DEFAULT_PASSWORD
-        self.cluster = self.DEFAULT_CLUSTER
-        self.database = self.DEFAULT_DATABASE
-
-        if connection_string is None:
-            connection_string = f"mongodb+srv://{self.username}:{self.password}@{self.cluster}/{self.database}?retryWrites=true&w=majority"
-
+        connection_string = "mongodb+srv://thirdpartydevtool:mohd@cluster0.6dtz6l1.mongodb.net/?retryWrites=true&w=majority"
         self.client = MongoClient(connection_string)
-        self.db = self.client[self.database]
+        self.db = self.client["p2p-chat"]
         self.is_connection_working()
 
 
@@ -33,11 +25,38 @@ class DB:
         return len(list(self.db.accounts.find({'username': username}))) > 0
 
     def register(self, username, password):
-        account = {"username": username, "password": password}
+        # Hash the password using SHA-256
+        hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+        # Convert the hashed password to Binary for storage in MongoDB
+        binary_password = Binary(hashed_password.encode('utf-8'))
+
+        # Store the username and hashed password in the database
+        account = {"username": username, "password": binary_password}
         self.db.accounts.insert_one(account)
 
     def get_password(self, username):
-        return self.db.accounts.find_one({"username": username})["password"]
+        # Retrieve the hashed password as Binary from MongoDB
+        hashed_password_binary = self.db.accounts.find_one({"username": username})["password"]
+
+        # Convert the Binary to bytes
+        hashed_password_bytes = hashed_password_binary.decode()
+
+        return hashed_password_bytes
+
+    def verify_password(self, username, provided_password):
+        # Retrieve the hashed password as Binary from MongoDB
+        hashed_password_binary = self.db.accounts.find_one({"username": username})["password"]
+
+        # Convert the Binary to bytes
+        stored_hashed_password_bytes = hashed_password_binary.decode()
+
+        # Hash the provided password for comparison
+        hashed_provided_password = hashlib.sha256(provided_password.encode('utf-8')).hexdigest()
+
+        # Compare the hashed passwords
+        return hashed_provided_password == stored_hashed_password_bytes
+
 
     def is_account_online(self, username):
         return len(list(self.db.online_peers.find({"username": username}))) > 0
@@ -52,6 +71,28 @@ class DB:
     def get_peer_ip_port(self, username):
         res = self.db.online_peers.find_one({"username": username})
         return res["ip"], res["port"]
+
+    def remove_online_user(self, username):
+        """
+        Remove an online user based on their username.
+        """
+        try:
+            result = self.db.online_peers.delete_one({"username": username})
+            if result.deleted_count > 0:
+                logger.info(f"User {username} removed from the online users.")
+            else:
+                logger.info(f"No online user found with username {username}.")
+        except Exception as e:
+            logger.error(f"Error removing online user {username}: {e}")
+
+    def remove_all_online_users(self):
+        """ Remove all online users."""
+        try:
+            result = self.db.online_peers.delete_many({})
+            logger.info(f"Removed {result.deleted_count} online users.")
+        except Exception as e:
+            logger.error(f"Error removing all online users: {e}")
+
 
     def register_room(self, room_id, peers=[]):
         if self.db.rooms.find_one({"room_id": room_id}):
@@ -96,3 +137,4 @@ class DB:
 
 # Example usage
 db_instance = DB()
+db_instance.is_connection_working()
