@@ -355,8 +355,8 @@ class PeerClient(threading.Thread):
                     formatted_message = display_message(self.username, message, True)
                     self.udpClientSocket.sendto(formatted_message.encode(), (self.ipToConnect, int(peer)))
 
-            while True :
 
+            while True :
                 self.update_peers()
 
                 if (not self.room_peers):
